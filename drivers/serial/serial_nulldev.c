@@ -34,6 +34,7 @@ static int nulldev_serial_putc(struct udevice *dev, const char ch)
 
 static const struct udevice_id nulldev_serial_ids[] = {
 	{ .compatible = "nulldev-serial" },
+	{ .compatible = "apple,uart" },
 	{ }
 };
 
