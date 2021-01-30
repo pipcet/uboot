@@ -133,7 +133,13 @@ pie_fixup_done:
 #endif
 	b	0f
 2:	set_vbar	vbar_el2, x0
+	mrs	x0, hcr_el2
+	tbnz	x0, #34, el2_host		/* HCR_EL2.E2H */
 	mov	x0, #0x33ff
+	msr	cptr_el2, x0			/* Enable FP/SIMD */
+	b	0f
+el2_host:
+	mov	x0, #3 << 20
 	msr	cptr_el2, x0			/* Enable FP/SIMD */
 	b	0f
 1:	set_vbar	vbar_el1, x0
