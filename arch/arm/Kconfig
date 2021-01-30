@@ -895,6 +895,17 @@ config ARCH_NEXELL
 	select DM
 	select GPIO_EXTRA_HEADER
 
+config ARCH_APPLE
+	bool "Apple SoCs"
+	select ARM64
+	select POSITION_INDEPENDENT
+	select DM
+	select DM_SERIAL
+	select DM_VIDEO
+	select OF_CONTROL
+	select OF_BOARD
+	select LINUX_KERNEL_IMAGE_HEADER
+
 config ARCH_OWL
 	bool "Actions Semi OWL SoCs"
 	select DM
@@ -1931,6 +1942,8 @@ config ISW_ENTRY_ADDR
 	  on the device type (secure/non-secure), boot media (xip/non-xip) and
 	  image headers.
 endif
+
+source "arch/arm/mach-apple/Kconfig"
 
 source "arch/arm/mach-aspeed/Kconfig"
 
