@@ -66,6 +66,13 @@ config SPL_DM_GPIO_LOOKUP_LABEL
 	  different gpios on different hardware versions
 	  for the same functionality in board code.
 
+config APPLE_SMC_GPIO
+	bool "Apple SMC GPIO driver"
+	depends on DM_GPIO && ARCH_APPLE
+	default y
+	help
+	  Support for the Apple SMC GPIO driver.
+
 config ALTERA_PIO
 	bool "Altera PIO driver"
 	depends on DM_GPIO
