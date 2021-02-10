@@ -899,12 +899,30 @@ config ARCH_APPLE
 	bool "Apple SoCs"
 	select ARM64
 	select POSITION_INDEPENDENT
+	select BLK
 	select DM
+	select DM_GPIO
+	select DM_KEYBOARD
+	select DM_MAILBOX
+	select DM_PCI
 	select DM_SERIAL
+	select DM_USB
 	select DM_VIDEO
+	select CLK
+	select CLK_CCF
+	select CMD_PCI
+	select CMD_USB
+	select MISC
 	select OF_CONTROL
 	select OF_BOARD
+	select PCI
+	select PINCTRL
+	select USB
 	select LINUX_KERNEL_IMAGE_HEADER
+	imply CMD_DM
+	imply CMD_GPT
+	imply DISTRO_DEFAULTS
+	imply FIT
 
 config ARCH_OWL
 	bool "Actions Semi OWL SoCs"
