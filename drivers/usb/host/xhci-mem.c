@@ -110,7 +110,7 @@ static void xhci_scratchpad_free(struct xhci_ctrl *ctrl)
 
 	ctrl->dcbaa->dev_context_ptrs[0] = 0;
 
-	free((void *)(uintptr_t)le64_to_cpu(ctrl->scratchpad->sp_array[0]));
+	free(phys_to_virt(le64_to_cpu(ctrl->scratchpad->sp_array[0])));
 	free(ctrl->scratchpad->sp_array);
 	free(ctrl->scratchpad);
 	ctrl->scratchpad = NULL;
@@ -372,7 +372,7 @@ static int xhci_scratchpad_alloc(struct xhci_ctrl *ctrl)
 	if (!scratchpad->sp_array)
 		goto fail_sp2;
 	ctrl->dcbaa->dev_context_ptrs[0] =
-		cpu_to_le64((uintptr_t)scratchpad->sp_array);
+		cpu_to_le64((uintptr_t)virt_to_phys(scratchpad->sp_array));
 
 	xhci_flush_cache((uintptr_t)&ctrl->dcbaa->dev_context_ptrs[0],
 		sizeof(ctrl->dcbaa->dev_context_ptrs[0]));
@@ -393,8 +393,8 @@ static int xhci_scratchpad_alloc(struct xhci_ctrl *ctrl)
 	xhci_flush_cache((uintptr_t)buf, num_sp * page_size);
 
 	for (i = 0; i < num_sp; i++) {
-		uintptr_t ptr = (uintptr_t)buf + i * page_size;
-		scratchpad->sp_array[i] = cpu_to_le64(ptr);
+		void *ptr = buf + i * page_size;
+		scratchpad->sp_array[i] = cpu_to_le64(virt_to_phys(ptr));
 	}
 
 	xhci_flush_cache((uintptr_t)scratchpad->sp_array,
