@@ -133,4 +133,33 @@ static inline void *phys_to_virt(unsigned long x)
 
 #endif	/* XXX###XXX */
 
+
+#define virt_to_phys virt_to_phys
+static inline phys_addr_t virt_to_phys(void *vaddr)
+{
+	phys_addr_t phys = (phys_addr_t)vaddr;
+
+	if (phys == 0)
+		return 0;
+
+	if (phys < 0x960100000ULL || phys >= 0x980000000ULL)
+		printf("%s: 0x%llx\n", __func__, phys);
+	return phys - 0x960000000ULL;
+}
+
+#define phys_to_virt phys_to_virt
+static inline void *phys_to_virt(phys_addr_t phys)
+{
+	if (phys < 0x100000ULL || phys >= 0x20000000ULL)
+		printf("%s: 0x%llx\n", __func__, phys);
+	return (void *)(phys + 0x960000000ULL);
+}
+
+#define map_physmem map_physmem
+static inline void *map_physmem(phys_addr_t paddr, unsigned long len,
+				unsigned long flags)
+{
+	return (void *)paddr;
+}
+
 #endif	/* __ASM_ARM_MEMORY_H */
