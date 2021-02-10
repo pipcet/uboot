@@ -17,6 +17,13 @@ config SANDBOX_MBOX
 	  Enable support for a test mailbox implementation, which simply echos
 	  back a modified version of any message that is sent.
 
+config APPLE_MBOX
+	bool "Enable Apple IOP controller support"
+	depends on DM_MAILBOX && ARCH_APPLE
+	default y
+	help
+	  Enable support for the Apple IOP controller.
+
 config TEGRA_HSP
 	bool "Enable Tegra HSP controller support"
 	depends on DM_MAILBOX && ARCH_TEGRA
