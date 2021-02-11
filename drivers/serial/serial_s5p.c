@@ -20,12 +20,21 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_ARCH_APPLE
+#define RX_FIFO_COUNT_SHIFT	0
+#define RX_FIFO_COUNT_MASK	(0xf << RX_FIFO_COUNT_SHIFT)
+#define RX_FIFO_FULL		(1 << 8)
+#define TX_FIFO_COUNT_SHIFT	4
+#define TX_FIFO_COUNT_MASK	(0xf << TX_FIFO_COUNT_SHIFT)
+#define TX_FIFO_FULL		(1 << 9)
+#else
 #define RX_FIFO_COUNT_SHIFT	0
 #define RX_FIFO_COUNT_MASK	(0xff << RX_FIFO_COUNT_SHIFT)
 #define RX_FIFO_FULL		(1 << 8)
 #define TX_FIFO_COUNT_SHIFT	16
 #define TX_FIFO_COUNT_MASK	(0xff << TX_FIFO_COUNT_SHIFT)
 #define TX_FIFO_FULL		(1 << 24)
+#endif
 
 /* Information about a serial port */
 struct s5p_serial_plat {
@@ -147,7 +156,11 @@ static int s5p_serial_getc(struct udevice *dev)
 		return -EAGAIN;
 
 	serial_err_check(uart, 0);
+#ifdef CONFIG_ARCH_APPLE
+	return (int)(readl(&uart->urxh) & 0xff);
+#else
 	return (int)(readb(&uart->urxh) & 0xff);
+#endif
 }
 
 static int s5p_serial_putc(struct udevice *dev, const char ch)
@@ -200,6 +213,7 @@ static const struct dm_serial_ops s5p_serial_ops = {
 
 static const struct udevice_id s5p_serial_ids[] = {
 	{ .compatible = "samsung,exynos4210-uart" },
+	{ .compatible = "apple,uart" },
 	{ }
 };
 
