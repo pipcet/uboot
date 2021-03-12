@@ -26,6 +26,10 @@ struct apple_dart_priv {
 	void *base;
 };
 
+dma_addr_t apple_dart_bus_start;
+phys_addr_t apple_dart_phys_start;
+phys_size_t apple_dart_size = SZ_512M;
+
 static void apple_dart_flush_tlb(struct apple_dart_priv *priv)
 {
 	u32 status;
@@ -71,6 +75,8 @@ static int apple_dart_probe(struct udevice *dev)
 	int sid, i, j;
 	int ret;
 
+	apple_dart_phys_start = gd->ram_top - apple_dart_size;
+
 	priv->base = dev_read_addr_ptr(dev);
 	if (!priv->base)
 		return -EINVAL;
@@ -83,7 +89,8 @@ static int apple_dart_probe(struct udevice *dev)
 	memset(l1, 0, SZ_64K);
 
 	i = 0;
-	for (phys = 0x960000000; phys < 0x980000000;) {
+	phys = apple_dart_phys_start;
+	while (phys < apple_dart_phys_start + apple_dart_size) {
 		l2 = memalign(SZ_16K, SZ_16K);
 		memset(l2, 0, SZ_16K);
 

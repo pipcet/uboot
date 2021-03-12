@@ -19,6 +19,10 @@
 
 #define usleep_range(a, b) udelay((b))
 
+extern dma_addr_t apple_dart_bus_start;
+extern phys_addr_t apple_dart_phys_start;
+extern phys_size_t apple_dart_size;
+
 #define CORE_RC_PHYIF_CTL		0x00024
 #define   CORE_RC_PHYIF_CTL_RUN		BIT(0)
 #define CORE_RC_PHYIF_STAT		0x00028
@@ -482,6 +486,7 @@ static int apple_pcie_clk_init(struct apple_pcie_priv *priv)
 static int apple_pcie_probe(struct udevice *dev)
 {
 	struct apple_pcie_priv *priv = dev_get_priv(dev);
+	struct pci_controller *hose = dev_get_uclass_priv(dev);
 	struct udevice *dart;
 	fdt_addr_t addr;
 	char name[64];
@@ -563,6 +568,15 @@ static int apple_pcie_probe(struct udevice *dev)
 						      &dart);
 		if (ret < 0)
 			return ret;
+	}
+
+	for (i = 0; i < hose->region_count; i++) {
+		if (hose->regions[i].flags != PCI_REGION_SYS_MEMORY)
+			continue;
+
+		hose->regions[i].bus_start = apple_dart_bus_start;
+		hose->regions[i].phys_start = apple_dart_phys_start;
+		hose->regions[i].size = apple_dart_size;
 	}
 
 	return 0;
