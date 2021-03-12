@@ -801,9 +801,9 @@ int efi_memory_init(void)
 
 #ifdef CONFIG_EFI_LOADER_BOUNCE_BUFFER
 	/* Request a 32bit 64MB bounce buffer region */
-	uint64_t efi_bounce_buffer_addr = 0xffffffff;
+	uint64_t efi_bounce_buffer_addr = 0x968000000;
 
-	if (efi_allocate_pages(EFI_ALLOCATE_MAX_ADDRESS, EFI_LOADER_DATA,
+	if (efi_allocate_pages(EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
 			       (64 * 1024 * 1024) >> EFI_PAGE_SHIFT,
 			       &efi_bounce_buffer_addr) != EFI_SUCCESS)
 		return -1;
