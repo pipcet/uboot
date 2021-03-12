@@ -59,6 +59,9 @@ static struct mm_region apple_mem_map[] = {
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
 			 PTE_BLOCK_INNER_SHARE
 	}, {
+		/* Empty entry for framebuffer */
+		0,
+	}, {
 		/* List terminator */
 		0,
 	}
@@ -73,9 +76,42 @@ int board_init(void)
 
 int dram_init(void)
 {
-	/* This is a lie, but it works for now. */
-	gd->ram_size = 4ULL * SZ_1G;
+	int index, node, ret;
+	fdt_addr_t base;
+	fdt_size_t size;
+
+	ret = fdtdec_setup_mem_size_base();
+	if (ret)
+		return ret;
+
+	/* Update RAM mapping. */
+	index = ARRAY_SIZE(apple_mem_map) - 3;
+	apple_mem_map[index].virt = gd->ram_base;
+	apple_mem_map[index].phys = gd->ram_base;
+	apple_mem_map[index].size = gd->ram_size;
+
+	node = fdt_path_offset(gd->fdt_blob, "/chosen/framebuffer");
+	if (node < 0)
+		return 0;
+
+	base = fdtdec_get_addr_size(gd->fdt_blob, node, "reg", &size);
+	if (base == FDT_ADDR_T_NONE)
+		return 0;
+
+	/* Add framebuffer mapping. */
+	index = ARRAY_SIZE(apple_mem_map) - 2;
+	apple_mem_map[index].virt = base;
+	apple_mem_map[index].phys = base;
+	apple_mem_map[index].size = size;
+	apple_mem_map[index].attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL_NC) |
+		PTE_BLOCK_INNER_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN;
+
 	return 0;
+}
+
+int dram_init_banksize(void)
+{
+	return fdtdec_setup_memory_banksize();
 }
 
 void reset_cpu(ulong ignored)
