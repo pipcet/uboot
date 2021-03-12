@@ -23,14 +23,21 @@ static inline unsigned long bus_to_phys(unsigned long bus)
 
 #if CONFIG_IS_ENABLED(DM)
 #include <dm/device.h>
+#include <pci.h>
 
 static inline dma_addr_t dev_phys_to_bus(struct udevice *dev, phys_addr_t phys)
 {
+	if (device_is_on_pci_bus(dev))
+		return dm_pci_phys_to_bus(dev, phys, PCI_REGION_SYS_MEMORY);
+
 	return phys - dev_get_dma_offset(dev);
 }
 
 static inline phys_addr_t dev_bus_to_phys(struct udevice *dev, dma_addr_t bus)
 {
+	if (device_is_on_pci_bus(dev))
+		return dm_pci_bus_to_phys(dev, bus, PCI_REGION_SYS_MEMORY);
+
 	return bus + dev_get_dma_offset(dev);
 }
 #else
