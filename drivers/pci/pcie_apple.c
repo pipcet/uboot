@@ -161,6 +161,7 @@ static const struct dm_pci_ops apple_pcie_ops = {
 	.write_config = apple_pcie_write_config,
 };
 
+#if 0
 static int apple_pcie_tunable(struct apple_pcie_priv *priv, const char *name)
 {
 	int count, i;
@@ -200,6 +201,7 @@ static int apple_pcie_tunable(struct apple_pcie_priv *priv, const char *name)
 
 	return 0;
 }
+#endif
 
 static int apple_pcie_link_up(struct apple_pcie_priv *pcie, unsigned idx)
 {
@@ -241,6 +243,7 @@ usleep_range(250000, 500000);
 	}
 }
 
+#if 0
 static void apple_pcie_init_port(struct apple_pcie_priv *pcie, unsigned idx)
 {
 	writel(0x110, pcie->base_port[idx] + 0x8c);
@@ -265,6 +268,7 @@ static void apple_pcie_init_port(struct apple_pcie_priv *pcie, unsigned idx)
 	writel(0, pcie->base_port[idx] + 0x81c);
 	writel(0, pcie->base_port[idx] + 0x824);
 }
+#endif
 
 static int apple_pcie_setup_refclk(struct apple_pcie_priv *pcie, unsigned idx)
 {
@@ -312,12 +316,14 @@ static int apple_pcie_setup_port(struct apple_pcie_priv *pcie, unsigned idx)
 	dm_gpio_set_dir_flags(pcie->perstn[idx], GPIOD_IS_OUT);
 	dm_gpio_set_value(pcie->perstn[idx], 0);
 
+#if 0
 	apple_pcie_init_port(pcie, idx);
 
 	snprintf(tunable_name, sizeof(tunable_name) - 1, "tunable-port%d-config", idx);
 	res = apple_pcie_tunable(pcie, tunable_name);
 	if (res < 0)
 		return res;
+#endif
 
 	rmwl(0, PORT_APPCLK_EN, pcie->base_port[idx] + PORT_APPCLK);
 
@@ -348,6 +354,7 @@ static int apple_pcie_setup_port(struct apple_pcie_priv *pcie, unsigned idx)
 
 	ptr = apple_pcie_find_pcicap(pcie, idx << 3, 0x10);
 
+#if 0
 	rmwl(0, 1, pcie->base_config + (idx << 15) + 0x8bc);
 	snprintf(tunable_name, sizeof(tunable_name) - 1, "tunable-port%d", idx);
 	res = apple_pcie_tunable(pcie, tunable_name);
@@ -364,6 +371,7 @@ static int apple_pcie_setup_port(struct apple_pcie_priv *pcie, unsigned idx)
 	if (res < 0)
 		return res;
 	rmwl(1, 0, pcie->base_config + (idx << 15) + 0x8bc);
+#endif
 
 	if (ptr)
 		rmww(15, pcie->max_speed[idx], pcie->base_config + (idx << 15) + (ptr + 0x30)); /* maximum speed: 2.5, 5.0, 8.0 GT/s */
@@ -384,6 +392,7 @@ static int apple_pcie_setup_port(struct apple_pcie_priv *pcie, unsigned idx)
 	return 0;
 }
 
+#if 0
 static int apple_pcie_setup_phy_global(struct apple_pcie_priv *pcie)
 {
 	int res;
@@ -425,6 +434,7 @@ static int apple_pcie_setup_phy_global(struct apple_pcie_priv *pcie)
 
 	return 0;
 }
+#endif
 
 static int apple_pcie_setup_ports(struct apple_pcie_priv *pcie)
 {
@@ -432,6 +442,7 @@ static int apple_pcie_setup_ports(struct apple_pcie_priv *pcie)
 	unsigned port;
 	u32 stat;
 
+#if 0
 	res = apple_pcie_tunable(pcie, "tunable-axi2af");
 	if (res < 0)
 		return res;
@@ -452,6 +463,7 @@ static int apple_pcie_setup_ports(struct apple_pcie_priv *pcie)
 		printf("%s: root complex ready wait timed out.\n", __func__);
 		return res;
 	}
+#endif
 
 	for (port = 0; port < NUM_PORTS; port++) {
 		if (pcie->devpwron[port].num < 0)
