@@ -7,6 +7,8 @@
 
 #include <asm/armv8/mmu.h>
 #include <asm/global_data.h>
+#include <asm/io.h>
+#include <asm/system.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -114,8 +116,28 @@ int dram_init_banksize(void)
 	return fdtdec_setup_memory_banksize();
 }
 
+#define APPLE_WDT_BASE		0x23d2b0000ULL
+
+#define APPLE_WDT_SYS_CTL_ENABLE	BIT(2)
+
+typedef struct apple_wdt {
+	u32	reserved0[3];
+	u32	chip_ctl;
+	u32	sys_tmr;
+	u32	sys_cmp;
+	u32	reserved1;
+	u32	sys_ctl;
+} apple_wdt_t;
+
 void reset_cpu(ulong ignored)
 {
+	apple_wdt_t *wdt = (apple_wdt_t *)APPLE_WDT_BASE;
+
+	writel(0, &wdt->sys_cmp);
+	writel(APPLE_WDT_SYS_CTL_ENABLE, &wdt->sys_ctl);
+
+	while(1)
+		wfi();
 }
 
 extern long fw_dtb_pointer;
