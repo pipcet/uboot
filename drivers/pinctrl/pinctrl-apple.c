@@ -8,6 +8,7 @@
 #include <dm.h>
 #include <dm/device-internal.h>
 #include <dm/pinctrl.h>
+#include <dt-bindings/pinctrl/apple.h>
 #include <asm/io.h>
 #include <asm-generic/gpio.h>
 
@@ -22,6 +23,7 @@ struct apple_pinctrl_priv {
 #define  REG_GPIO_IRQ_OUT	(1 << 1)
 #define  REG_GPIO_IRQ_MASK	(7 << 1)
 #define  REG_GPIO_PERIPH	(1 << 5)
+#define  REG_GPIO_PERIPH_SHIFT	5
 #define  REG_GPIO_CFG_DONE	(1 << 9)
 #define REG_LOCK	0xc50
 
@@ -127,19 +129,20 @@ static const char *apple_pinctrl_get_pin_name(struct udevice *dev,
 {
 	static char pin_name[PINNAME_SIZE];
 
-	snprintf(pin_name, PINNAME_SIZE, "gpio%d", selector);
+	snprintf(pin_name, PINNAME_SIZE, "pin%d", selector);
 	return pin_name;
 }
 
-static int apple_pinctrl_get_functions_count(struct udevice *dev)
+static int apple_pinctrl_get_pin_muxing(struct udevice *dev, unsigned selector,
+					char *buf, int size)
 {
-	return 1;
-}
+	struct apple_pinctrl_priv *priv = dev_get_priv(dev);
 
-static const char *apple_pinctrl_get_function_name(struct udevice *dev,
-						   unsigned selector)
-{
-	return "periph";
+	if (readl(priv->base + REG_GPIO(selector)) & REG_GPIO_PERIPH)
+		strncpy(buf, "periph", size);
+	else
+		strncpy(buf, "gpio", size);
+	return 0;
 }
 
 static int apple_pinctrl_pinmux_set(struct udevice *dev, unsigned pin_selector,
@@ -149,8 +152,19 @@ static int apple_pinctrl_pinmux_set(struct udevice *dev, unsigned pin_selector,
 
 	apple_pinctrl_config_pin(priv, pin_selector,
 				 REG_GPIO_DATA | REG_GPIO_IRQ_MASK,
-				 REG_GPIO_PERIPH);
+				 func_selector << REG_GPIO_PERIPH_SHIFT);
 	return 0;
+}
+
+static int apple_pinctrl_pinmux_property_set(struct udevice *dev,
+					     u32 pinmux_group)
+{
+	unsigned pin_selector = APPLE_PIN(pinmux_group);
+	unsigned func_selector = APPLE_FUNC(pinmux_group);
+	int ret;
+
+	ret = apple_pinctrl_pinmux_set(dev, pin_selector, func_selector);
+	return ret ? ret : pin_selector;
 }
 
 static int apple_pinctrl_clk_init(struct udevice *dev,
@@ -176,6 +190,7 @@ static int apple_pinctrl_clk_init(struct udevice *dev,
 static int apple_pinctrl_probe(struct udevice *dev)
 {
 	struct apple_pinctrl_priv *priv = dev_get_priv(dev);
+	struct ofnode_phandle_args args;
 	struct udevice *child;
 	int ret;
 
@@ -187,7 +202,9 @@ static int apple_pinctrl_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	priv->pin_count = dev_read_u32_default(dev, "pin-count", 0);
+	if (!dev_read_phandle_with_args(dev, "gpio-ranges",
+					NULL, 3, 0, &args))
+		priv->pin_count = args.args[2];
 
 	writel(0, priv->base + REG_LOCK);
 
@@ -201,13 +218,13 @@ static struct pinctrl_ops apple_pinctrl_ops = {
 	.set_state = pinctrl_generic_set_state,
 	.get_pins_count = apple_pinctrl_get_pins_count,
 	.get_pin_name = apple_pinctrl_get_pin_name,
-	.get_functions_count = apple_pinctrl_get_functions_count,
-	.get_function_name = apple_pinctrl_get_function_name,
 	.pinmux_set = apple_pinctrl_pinmux_set,
+	.pinmux_property_set = apple_pinctrl_pinmux_property_set,
+	.get_pin_muxing = apple_pinctrl_get_pin_muxing,
 };
 
 static const struct udevice_id apple_pinctrl_ids[] = {
-	{ .compatible = "apple,gpio-v0" },
+	{ .compatible = "apple,pinctrl" },
 	{ /* sentinel */ }
 };
 
