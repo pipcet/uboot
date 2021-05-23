@@ -53,10 +53,11 @@ static int simple_video_probe(struct udevice *dev)
 	} else if (strcmp(format, "a8b8g8r8") == 0 ||
 		   strcmp(format, "x8b8g8r8") == 0 ||
 		   strcmp(format, "a8r8g8b8") == 0 ||
-		   strcmp(format, "x8r8g8b8") == 0 ||
-		   strcmp(format, "a2r10g10b10") == 0 ||
-		   strcmp(format, "x2r10g10b10") == 0) {
+		   strcmp(format, "x8r8g8b8") == 0) {
 		uc_priv->bpix = VIDEO_BPP32;
+	} else if (strcmp(format, "a2r10g10b10") == 0 ||
+		   strcmp(format, "x2r10g10b10") == 0) {
+		uc_priv->bpix = VIDEO_BPP30;
 	} else {
 		printf("%s: invalid format: %s\n", __func__, format);
 		return -EINVAL;

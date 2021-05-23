@@ -227,6 +227,7 @@ static efi_uintn_t gop_get_bpp(struct efi_gop *this)
 
 	switch (gopobj->bpix) {
 #ifdef CONFIG_DM_VIDEO
+	case VIDEO_BPP30:
 	case VIDEO_BPP32:
 #else
 	case LCD_COLOR32:
@@ -468,6 +469,7 @@ efi_status_t efi_gop_register(void)
 	switch (bpix) {
 #ifdef CONFIG_DM_VIDEO
 	case VIDEO_BPP16:
+	case VIDEO_BPP30:
 	case VIDEO_BPP32:
 #else
 	case LCD_COLOR32:
@@ -512,7 +514,7 @@ efi_status_t efi_gop_register(void)
 	gopobj->info.width = col;
 	gopobj->info.height = row;
 #ifdef CONFIG_DM_VIDEO
-	if (bpix == VIDEO_BPP32)
+	if (bpix == VIDEO_BPP32 || bpix == VIDEO_BPP30)
 #else
 	if (bpix == LCD_COLOR32)
 #endif
