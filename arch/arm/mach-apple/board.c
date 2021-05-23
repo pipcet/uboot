@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <efi_loader.h>
 
 #include <asm/armv8/mmu.h>
 #include <asm/global_data.h>
@@ -159,4 +160,18 @@ ulong board_get_usable_ram_top(ulong total_size)
 unsigned long get_uart_clk(int dev_index)
 {
 	return 24000000;
+}
+
+__weak phys_addr_t apple_mbox_phys_start;
+__weak phys_size_t apple_mbox_size;
+
+int ft_board_setup(void *blob, struct bd_info *bd)
+{
+	if (apple_mbox_size > 0) {
+		/* Reserve memory stolen by the mailboxes. */
+		efi_add_memory_map(apple_mbox_phys_start, apple_mbox_size,
+				   EFI_RESERVED_MEMORY_TYPE);
+	}
+
+	return 0;
 }
