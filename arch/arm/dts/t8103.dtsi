@@ -148,12 +148,60 @@
 			#gpio-cells = <2>;
 			gpio-ranges = <&pinctrl 0 0 212>;
 
+			i2c0_pins: i2c0_pins {
+				pinmux = <APPLE_PINMUX(188, 1)>,
+					 <APPLE_PINMUX(192, 1)>;
+			};
+
 			pcie_pins: pcie-pins {
 				pinmux = <APPLE_PINMUX(150, 1)>,
 				         <APPLE_PINMUX(151, 1)>,
 					 <APPLE_PINMUX(32, 1)>;
 			};
 		};
+
+		sio_busif_clk: clock@23b7001c0 {
+			compatible = "apple,pmgr-clk-gate";
+			reg = <0x2 0x3b7001c0 0x0 0x8>;
+			#clock-cells = <0>;
+			clocks = <&clk24>;
+		};
+
+		sio_clk: clock@23b7001c8 {
+			compatible = "apple,pmgr-clk-gate";
+			reg = <0x2 0x3b7001c8 0x0 0x8>;
+			#clock-cells = <0>;
+			clocks = <&sio_busif_clk>;
+		};
+
+		i2c0_clk: clock@23b7001f0 {
+			compatible = "apple,pmgr-clk-gate";
+			reg = <0x2 0x3b7001f0 0x0 0x8>;
+			#clock-cells = <0>;
+			clocks = <&sio_clk>;
+		};
+
+		i2c0: i2c@20a110000 {
+			compatible = "apple,i2c-v0";
+			reg = <0x2 0x35010000 0x0 0x4000>;
+			interrupt-parent = <&aic>;
+			interrupts = <AIC_IRQ 627 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&i2c0_clk>;
+			pinctrl-0 = <&i2c0_pins>;
+			pinctrl-names = "default";
+			#address-cells = <0x1>;
+			#size-cells = <0x0>;
+
+			hpm0: hpm@38 {
+				compatible = "ti,tps6598x";
+				reg = <0x38>;
+			};
+
+			hpm1: hpm@3f {
+				compatible = "ti,tps6598x";
+				reg = <0x3f>;
+			};
+                };
 
 		imx_clk: clock@23b7001b8 {
 			compatible = "apple,pmgr-clk-gate";
@@ -366,6 +414,59 @@
 				#address-cells = <3>;
 				#size-cells = <2>;
 				ranges;
+			};
+		};
+
+		atc1_common: clock@23b700448 {
+			compatible = "apple,pmgr-clk-gate";
+			reg = <0x2 0x3b700448 0x0 0x8>;
+			#clock-cells = <0>;
+			clocks = <&clk24>;
+		};
+
+		atc1_usb_aon: clock@23d280090 {
+			compatible = "apple,pmgr-clk-gate";
+			reg = <0x2 0x3d280090 0x0 0x8>;
+			#clock-cells = <0>;
+			clocks = <&atc1_common>;
+		};
+
+		atc1_usb: clock@23d2800a0 {
+			compatible = "apple,pmgr-clk-gate";
+			reg = <0x2 0x3d2800a0 0x0 0x8>;
+			#clock-cells = <0>;
+			clocks = <&atc1_usb_aon>;
+		};
+
+		usb_dart1: usb_dart1@502f00000 {
+			compatible = "apple,dart-m1";
+			reg = <0x5 0x02f00000 0x0 0x80000>,
+			      <0x5 0x02f80000 0x0 0x4000>;
+			#iommu-cells = <1>;
+			clocks = <&atc1_usb>;
+			sid-mask = <11>;
+			sid-remap = <0 1>;
+		};
+
+		usb_drd1: usb_drd1@502280000 {
+			compatible = "apple,dwc3-m1";
+			reg = <0x5 0x00000000 0x0 0x1000000>,
+			      <0x5 0x02000000 0x0 0x1000000>;
+			reg-names = "atcphy", "usbcore";
+			clocks = <&atc1_usb>;
+			#address-cells = <2>;
+			#size-cells = <2>;
+			ranges;
+
+			usbdrd_dwc3_1: dwc3@502280000 {
+				compatible = "snps,dwc3";
+				reg = <0x5 0x02280000 0x0 0x100000>;
+				interrupt-parent = <&aic>;
+				interrupts = <AIC_IRQ 857 IRQ_TYPE_LEVEL_HIGH>;
+				iommus = <&usb_dart1 1>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				dr_mode = "host";
 			};
 		};
 
