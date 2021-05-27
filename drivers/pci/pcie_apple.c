@@ -290,7 +290,7 @@ static int apple_pcie_probe(struct udevice *dev)
 	fdt_addr_t addr;
 	u32 phandle;
 	ofnode node;
-	int ret, i;
+	int i, len, ret;
 
 	priv->dev = dev;
 	priv->base_config = dev_read_addr_ptr(dev);
@@ -336,7 +336,8 @@ static int apple_pcie_probe(struct udevice *dev)
 
 	apple_pcie_setup_ports(priv);
 
-	for (i = 0; i < 4; i++) {
+	len = dev_read_size(dev, "iommu-map");
+	for (i = 0; i < len / 16; i++) {
 		ret = dev_read_u32_index(dev, "iommu-map", i * 4 + 1,
 					 &phandle);
 		if (ret < 0)
