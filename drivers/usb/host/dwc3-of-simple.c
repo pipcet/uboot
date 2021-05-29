@@ -93,6 +93,7 @@ static const struct udevice_id dwc3_of_simple_ids[] = {
 	{ .compatible = "amlogic,meson-gxl-dwc3" },
 	{ .compatible = "rockchip,rk3399-dwc3" },
 	{ .compatible = "ti,dwc3" },
+	{ .compatible = "apple,dwc3-m1" },
 	{ }
 };
 
