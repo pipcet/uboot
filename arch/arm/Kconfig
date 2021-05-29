@@ -901,8 +901,10 @@ config ARCH_APPLE
 	select POSITION_INDEPENDENT
 	select BLK
 	select DM
+	select DM_DMA
 	select DM_GPIO
 	select DM_KEYBOARD
+	select DM_I2C
 	select DM_MAILBOX
 	select DM_PCI
 	select DM_SERIAL
@@ -922,6 +924,7 @@ config ARCH_APPLE
 	select LINUX_KERNEL_IMAGE_HEADER
 	imply CMD_DM
 	imply CMD_GPT
+	imply CMD_I2C
 	imply DISTRO_DEFAULTS
 	imply FIT
 
