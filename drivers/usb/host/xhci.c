@@ -935,8 +935,8 @@ static int xhci_submit_root(struct usb_device *udev, unsigned long pipe,
 
 	if ((req->requesttype & USB_RT_PORT) &&
 	    le16_to_cpu(req->index) > max_ports) {
-		printf("The request port(%d) exceeds maximum port number\n",
-		       le16_to_cpu(req->index) - 1);
+		debug("The request port(%d) exceeds maximum port number\n",
+		      le16_to_cpu(req->index) - 1);
 		return -EINVAL;
 	}
 
