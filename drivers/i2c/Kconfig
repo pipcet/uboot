@@ -104,6 +104,13 @@ config SPL_DM_I2C_GPIO
 	  bindings are supported.
 	  Binding info: doc/device-tree-bindings/i2c/i2c-gpio.txt
 
+config SYS_I2C_APPLE
+	bool "Apple I2C Driver"
+	depends on DM_I2C && ARCH_APPLE
+	default y
+	help
+	  Add support for the Apple I2C controller.
+
 config SYS_I2C_AT91
 	bool "Atmel I2C driver"
 	depends on DM_I2C && ARCH_AT91
