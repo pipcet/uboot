@@ -7,6 +7,7 @@
 #include <clk.h>
 #include <cpu_func.h>
 #include <dm.h>
+#include <mapmem.h>
 #include <asm/io.h>
 
 #define DART_TLB_OP		0x0020
@@ -24,6 +25,7 @@
 struct apple_dart_priv {
 	struct clk_bulk clks;
 	void *base;
+	void *base2;
 };
 
 dma_addr_t apple_dart_bus_start;
@@ -45,6 +47,18 @@ static void apple_dart_flush_tlb(struct apple_dart_priv *priv)
 			break;
 	}
 
+	if (priv->base2) {
+		writel(0xffffffff, priv->base2 + DART_TLB_OP_SIDMASK);
+		writel(DART_TLB_OP_FLUSH, priv->base2 + DART_TLB_OP);
+
+		for (;;) {
+			status = readl(priv->base2 + DART_TLB_OP);
+			if ((status & DART_TLB_OP_OPMASK) == 0)
+				break;
+			if ((status & DART_TLB_OP_BUSY) == 0)
+				break;
+		}
+	}
 }
 
 static int apple_dart_clk_init(struct udevice *dev,
@@ -71,6 +85,7 @@ static int apple_dart_probe(struct udevice *dev)
 {
 	struct apple_dart_priv *priv = dev_get_priv(dev);
 	phys_addr_t phys;
+	fdt_addr_t addr;
 	u64 *l1, *l2;
 	int sid, i, j;
 	int ret;
@@ -80,6 +95,10 @@ static int apple_dart_probe(struct udevice *dev)
 	priv->base = dev_read_addr_ptr(dev);
 	if (!priv->base)
 		return -EINVAL;
+
+	addr = dev_read_addr_index(dev, 1);
+	if (addr != FDT_ADDR_T_NONE)
+		priv->base2 = map_sysmem(addr, 0);
 
 	ret = apple_dart_clk_init(dev, priv);
 	if (ret)
@@ -111,6 +130,13 @@ static int apple_dart_probe(struct udevice *dev)
 			writel(0, priv->base + DART_TTBR(sid, i));
 	}
 
+	if (priv->base2) {
+		for (sid = 0; sid < 16; sid++) {
+			for (i = 0; i < 4; i++)
+				writel(0, priv->base2 + DART_TTBR(sid, i));
+		}
+	}
+
 	apple_dart_flush_tlb(priv);
 
 	for (sid = 0; sid < 16; sid++) {
@@ -122,11 +148,27 @@ static int apple_dart_probe(struct udevice *dev)
 		}
 	}
 
+	if (priv->base2) {
+		for (sid = 0; sid < 16; sid++) {
+			phys = (phys_addr_t)l1;
+			for (i = 0; i < 4; i++) {
+				writel((phys >> DART_TTBR_SHIFT) | DART_TTBR_VALID,
+				       priv->base2 + DART_TTBR(sid, i));
+				phys += SZ_16K;
+			}
+		}
+	}
+
 	apple_dart_flush_tlb(priv);
 
 	for (sid = 0; sid < 16; sid++)
 		writel(DART_CONFIG_TXEN, priv->base + DART_CONFIG(sid));
 	
+	if (priv->base2) {
+		for (sid = 0; sid < 16; sid++)
+			writel(DART_CONFIG_TXEN, priv->base2 + DART_CONFIG(sid));
+	}
+
 	return 0;
 }
 
