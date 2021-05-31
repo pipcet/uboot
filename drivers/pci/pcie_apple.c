@@ -95,7 +95,7 @@ struct apple_pcie_priv {
 	struct udevice *dev;
 	struct clk_bulk clks;
 	void *base_config;
-	void *base_core[2];
+	void *base_rc;
 	void *base_port[NUM_PORTS];
 	struct gpio_desc pwren[NUM_PORTS];
 	struct gpio_desc perstn[NUM_PORTS];
@@ -175,28 +175,28 @@ static int apple_pcie_setup_refclk(struct apple_pcie_priv *pcie, unsigned idx)
 	u32 stat;
 	int res;
 
-	res = readl_poll_timeout(pcie->base_core[0] + CORE_RC_PHYIF_STAT, stat, (stat & CORE_RC_PHYIF_STAT_REFCLK), 100, 50000);
+	res = readl_poll_timeout(pcie->base_rc + CORE_RC_PHYIF_STAT, stat, (stat & CORE_RC_PHYIF_STAT_REFCLK), 100, 50000);
 	if (res < 0) {
 		printf("%s: core refclk wait timed out.\n", __func__);
 		return res;
 	}
 
-	rmwl(0, CORE_LANE_CTL_CFGACC, pcie->base_core[0] + CORE_LANE_CTL(idx));
-	rmwl(0, CORE_LANE_CFG_REFCLK0REQ, pcie->base_core[0] + CORE_LANE_CFG(idx));
-	res = readl_poll_timeout(pcie->base_core[0] + CORE_LANE_CFG(idx), stat, (stat & CORE_LANE_CFG_REFCLK0ACK), 100, 50000);
+	rmwl(0, CORE_LANE_CTL_CFGACC, pcie->base_rc + CORE_LANE_CTL(idx));
+	rmwl(0, CORE_LANE_CFG_REFCLK0REQ, pcie->base_rc + CORE_LANE_CFG(idx));
+	res = readl_poll_timeout(pcie->base_rc + CORE_LANE_CFG(idx), stat, (stat & CORE_LANE_CFG_REFCLK0ACK), 100, 50000);
 	if (res < 0) {
 		printf("%s: lane refclk%d wait timed out (port %d).\n", __func__, 0, idx);
 		return res;
 	}
-	rmwl(0, CORE_LANE_CFG_REFCLK1, pcie->base_core[0] + CORE_LANE_CFG(idx));
-	res = readl_poll_timeout(pcie->base_core[0] + CORE_LANE_CFG(idx), stat, (stat & CORE_LANE_CFG_REFCLK1), 100, 50000);
+	rmwl(0, CORE_LANE_CFG_REFCLK1, pcie->base_rc + CORE_LANE_CFG(idx));
+	res = readl_poll_timeout(pcie->base_rc + CORE_LANE_CFG(idx), stat, (stat & CORE_LANE_CFG_REFCLK1), 100, 50000);
 	if(res < 0) {
 		printf("%s: lane refclk%d wait timed out (port %d).\n", __func__, 1, idx);
 		return res;
 	}
-	rmwl(CORE_LANE_CTL_CFGACC, 0, pcie->base_core[0] + CORE_LANE_CTL(idx));
+	rmwl(CORE_LANE_CTL_CFGACC, 0, pcie->base_rc + CORE_LANE_CTL(idx));
 	udelay(1);
-	rmwl(0, CORE_LANE_CFG_REFCLKEN, pcie->base_core[0] + CORE_LANE_CFG(idx));
+	rmwl(0, CORE_LANE_CFG_REFCLKEN, pcie->base_rc + CORE_LANE_CFG(idx));
 
 	rmwl(0, PORT_REFCLK_EN, pcie->base_port[idx] + PORT_REFCLK);
 
@@ -297,12 +297,10 @@ static int apple_pcie_probe(struct udevice *dev)
 	if (!priv->base_config)
 		return -EINVAL;
 
-	for (i = 0; i < 2; i++) {
-		addr = dev_read_addr_index(dev, 1 + i);
-		if (addr == FDT_ADDR_T_NONE)
-			return -EINVAL;
-		priv->base_core[i] = map_sysmem(addr, 0);
-	}
+	addr = dev_read_addr_index(dev, 1);
+	if (addr == FDT_ADDR_T_NONE)
+		return -EINVAL;
+	priv->base_rc = map_sysmem(addr, 0);
 
 	for (i = 0; i < NUM_PORTS; i++) {
 		addr = dev_read_addr_index(dev, 3 + i);
