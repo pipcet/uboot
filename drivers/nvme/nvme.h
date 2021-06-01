@@ -637,4 +637,6 @@ struct nvme_ns {
 	u32 mode_select_block_len;
 };
 
+int nvme_init(struct udevice *udev);
+
 #endif /* __DRIVER_NVME_H__ */

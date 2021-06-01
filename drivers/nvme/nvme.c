@@ -32,6 +32,32 @@ enum nvme_queue_id {
 	NVME_Q_NUM,
 };
 
+#define ANS_MODESEL		0x01304
+#define ANS_ASQ_DB		0x2490c
+#define ANS_IOSQ_DB		0x24910
+#define ANS_NVMMU_NUM		0x28100
+#define ANS_NVMMU_BASE_ASQ	0x28108
+#define ANS_NVMMU_BASE_IOSQ	0x28110
+#define ANS_NVMMU_TCB_INVAL	0x28118
+#define ANS_NVMMU_TCB_STAT	0x28120
+
+#define ANS_NVMMU_TCB_SIZE	0x4000
+#define ANS_NVMMU_TCB_PITCH	0x80
+
+struct ans_nvmmu_tcb {
+	u8 opcode;
+	u8 flags;
+	u8 command_id;
+	u8 pad0;
+	u32 prpl_len;
+	u8 pad1[16];
+	u64 prp1;
+	u64 prp2;
+};
+
+#define ANS_NVMMU_TCB_WRITE	BIT(0)
+#define ANS_NVMMU_TCB_READ	BIT(1)
+
 /*
  * An NVM Express queue. Each device has at least two (one for admin
  * commands and one for I/O commands).
@@ -40,8 +66,9 @@ struct nvme_queue {
 	struct nvme_dev *dev;
 	struct nvme_command *sq_cmds;
 	struct nvme_completion *cqes;
+	struct ans_nvmmu_tcb *tcbs;
 	wait_queue_head_t sq_full;
-	u32 __iomem *q_db;
+	u32 __iomem *q_db, *q_linear_db;
 	u16 q_depth;
 	s16 cq_vector;
 	u16 sq_head;
@@ -139,7 +166,13 @@ static __le16 nvme_get_cmd_id(void)
 {
 	static unsigned short cmdid;
 
+#if 0
 	return cpu_to_le16((cmdid < USHRT_MAX) ? cmdid++ : 0);
+#else
+	if (++cmdid >= NVME_Q_DEPTH)
+		cmdid = 0;
+	return cpu_to_le16(cmdid);
+#endif
 }
 
 static u16 nvme_read_completion_status(struct nvme_queue *nvmeq, u16 index)
@@ -160,16 +193,38 @@ static u16 nvme_read_completion_status(struct nvme_queue *nvmeq, u16 index)
  */
 static void nvme_submit_cmd(struct nvme_queue *nvmeq, struct nvme_command *cmd)
 {
-	u16 tail = nvmeq->sq_tail;
+	u16 tail;
+
+	if (nvmeq->q_linear_db)
+		tail = cmd->common.command_id;
+	else
+		tail = nvmeq->sq_tail;
+
+	struct ans_nvmmu_tcb *tcb;
+
+	tcb = ((void *)nvmeq->tcbs) +
+		cmd->common.command_id * ANS_NVMMU_TCB_PITCH;
+	memset(tcb, 0, sizeof(*tcb));
+	tcb->opcode = cmd->common.opcode;
+	tcb->flags = ANS_NVMMU_TCB_WRITE | ANS_NVMMU_TCB_READ;
+	tcb->command_id = cmd->common.command_id;
+	tcb->prpl_len = cmd->rw.length;
+	tcb->prp1 = cmd->common.prp1;
+	tcb->prp2 = cmd->common.prp2;
+	flush_dcache_range((ulong)tcb, (ulong)tcb + sizeof(*tcb));
 
 	memcpy(&nvmeq->sq_cmds[tail], cmd, sizeof(*cmd));
 	flush_dcache_range((ulong)&nvmeq->sq_cmds[tail],
 			   (ulong)&nvmeq->sq_cmds[tail] + sizeof(*cmd));
 
-	if (++tail == nvmeq->q_depth)
-		tail = 0;
-	writel(tail, nvmeq->q_db);
-	nvmeq->sq_tail = tail;
+	if (nvmeq->q_linear_db) {
+		writel(tail, nvmeq->q_linear_db);
+	} else {
+		if (++tail == nvmeq->q_depth)
+			tail = 0;
+		writel(tail, nvmeq->q_db);
+		nvmeq->sq_tail = tail;
+	}
 }
 
 static int nvme_submit_sync_cmd(struct nvme_queue *nvmeq,
@@ -195,6 +250,16 @@ static int nvme_submit_sync_cmd(struct nvme_queue *nvmeq,
 		    >= timeout_us)
 			return -ETIMEDOUT;
 	}
+
+	struct ans_nvmmu_tcb *tcb;
+
+	tcb = ((void *)nvmeq->tcbs) +
+		cmd->common.command_id * ANS_NVMMU_TCB_PITCH;
+	memset(tcb, 0, sizeof(*tcb));
+	flush_dcache_range((ulong)tcb, (ulong)tcb + sizeof(*tcb));
+	writel(cmd->common.command_id,
+	       ((void __iomem *)nvmeq->dev->bar) + ANS_NVMMU_TCB_INVAL);
+	readl(((void __iomem *)nvmeq->dev->bar) + ANS_NVMMU_TCB_STAT);
 
 	status >>= 1;
 	if (status) {
@@ -261,6 +326,22 @@ static struct nvme_queue *nvme_alloc_queue(struct nvme_dev *dev,
 	dev->queue_count++;
 	dev->queues[qid] = nvmeq;
 
+	nvmeq->tcbs = (void *)memalign(4096, ANS_NVMMU_TCB_SIZE);
+	memset((void *)nvmeq->tcbs, 0, ANS_NVMMU_TCB_SIZE);
+
+	switch (qid) {
+	case NVME_ADMIN_Q:
+		nvmeq->q_linear_db = ((void __iomem *)dev->bar) + ANS_ASQ_DB;
+		nvme_writeq((ulong)nvmeq->tcbs,
+			    ((void __iomem *)dev->bar) + ANS_NVMMU_BASE_ASQ);
+		break;
+	case NVME_IO_Q:
+		nvmeq->q_linear_db = ((void __iomem *)dev->bar) + ANS_IOSQ_DB;
+		nvme_writeq((ulong)nvmeq->tcbs,
+			    ((void __iomem *)dev->bar) + ANS_NVMMU_BASE_IOSQ);
+		break;
+	}
+
 	return nvmeq;
 
  free_queue:
@@ -297,6 +378,10 @@ static int nvme_enable_ctrl(struct nvme_dev *dev)
 	dev->ctrl_config &= ~NVME_CC_SHN_MASK;
 	dev->ctrl_config |= NVME_CC_ENABLE;
 	writel(cpu_to_le32(dev->ctrl_config), &dev->bar->cc);
+
+	writel((ANS_NVMMU_TCB_SIZE / ANS_NVMMU_TCB_PITCH) - 1,
+	       ((void __iomem *)dev->bar) + ANS_NVMMU_NUM);
+	writel(0, ((void __iomem *)dev->bar) + ANS_MODESEL);
 
 	return nvme_wait_ready(dev, true);
 }
@@ -705,7 +790,8 @@ static int nvme_blk_probe(struct udevice *udev)
 	desc->blksz = 1 << ns->lba_shift;
 	desc->bdev = udev;
 	pplat = dev_get_parent_plat(udev->parent);
-	sprintf(desc->vendor, "0x%.4x", pplat->vendor);
+	if (pplat)
+		sprintf(desc->vendor, "0x%.4x", pplat->vendor);
 	memcpy(desc->product, ndev->serial, sizeof(ndev->serial));
 	memcpy(desc->revision, ndev->firmware_rev, sizeof(ndev->firmware_rev));
 
@@ -798,26 +884,12 @@ U_BOOT_DRIVER(nvme_blk) = {
 	.priv_auto	= sizeof(struct nvme_ns),
 };
 
-static int nvme_bind(struct udevice *udev)
+int nvme_init(struct udevice *udev)
 {
-	static int ndev_num;
-	char name[20];
-
-	sprintf(name, "nvme#%d", ndev_num++);
-
-	return device_set_name(udev, name);
-}
-
-static int nvme_probe(struct udevice *udev)
-{
-	int ret;
 	struct nvme_dev *ndev = dev_get_priv(udev);
-
-	ndev->instance = trailing_strtol(udev->name);
+	int ret;
 
 	INIT_LIST_HEAD(&ndev->namespaces);
-	ndev->bar = dm_pci_map_bar(udev, PCI_BASE_ADDRESS_0,
-			PCI_REGION_MEM);
 	if (readl(&ndev->bar->csts) == -1) {
 		ret = -ENODEV;
 		printf("Error: %s: Out of memory!\n", udev->name);
@@ -862,6 +934,26 @@ free_queue:
 	free((void *)ndev->queues);
 free_nvme:
 	return ret;
+}
+
+static int nvme_bind(struct udevice *udev)
+{
+	static int ndev_num;
+	char name[20];
+
+	sprintf(name, "nvme#%d", ndev_num++);
+
+	return device_set_name(udev, name);
+}
+
+static int nvme_probe(struct udevice *udev)
+{
+	struct nvme_dev *ndev = dev_get_priv(udev);
+
+	ndev->instance = trailing_strtol(udev->name);
+	ndev->bar = dm_pci_map_bar(udev, PCI_BASE_ADDRESS_0,
+			PCI_REGION_MEM);
+	return nvme_init(udev);
 }
 
 U_BOOT_DRIVER(nvme) = {

@@ -22,6 +22,12 @@
 	"fdt_addr_r=0x960100000\0" \
 	"kernel_addr_r=0x960200000\0"
 
+#if CONFIG_IS_ENABLED(CMD_NVME)
+	#define BOOT_TARGET_NVME(func) func(NVME, nvme, 0)
+#else
+	#define BOOT_TARGET_NVME(func)
+#endif
+
 #if CONFIG_IS_ENABLED(CMD_USB)
 	#define BOOT_TARGET_USB(func) func(USB, usb, 0)
 #else
@@ -29,6 +35,7 @@
 #endif
 
 #define BOOT_TARGET_DEVICES(func) \
+	BOOT_TARGET_NVME(func) \
 	BOOT_TARGET_USB(func)
 
 #include <config_distro_bootcmd.h>
