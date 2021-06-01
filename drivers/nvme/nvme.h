@@ -635,4 +635,6 @@ struct nvme_ns {
 	u8 flbas;
 };
 
+int nvme_init(struct udevice *udev);
+
 #endif /* __DRIVER_NVME_H__ */

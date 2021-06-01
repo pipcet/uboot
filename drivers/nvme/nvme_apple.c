@@ -8,6 +8,7 @@
 #include <dm.h>
 #include <mailbox.h>
 #include <mapmem.h>
+#include "nvme.h"
 
 #include <asm/io.h>
 #include <linux/iopoll.h>
@@ -24,12 +25,11 @@ extern phys_addr_t apple_mbox_phys_addr;
 #define ANS_SART_ADDR(id)	(0x0040 + 4 * (id))
 
 struct apple_nvme_priv {
+	struct nvme_dev ndev;
 	struct clk_bulk clks;
 	void *base;
 	void *sart;
-	void *buf;
 	struct mbox_chan chan;
-	int msgid;
 };
 
 static int apple_nvme_clk_init(struct udevice *dev,
@@ -58,7 +58,6 @@ static int apple_nvme_probe(struct udevice *dev)
 	fdt_addr_t addr;
 	phys_addr_t mbox_addr;
 	phys_size_t mbox_size;
-	u64 msg[2];
 	u32 stat;
 	int id, ret;
 
@@ -117,10 +116,8 @@ static int apple_nvme_probe(struct udevice *dev)
 	writel(0x102, priv->base + 0x24508);
 	writel(0x10002, priv->base + 0x24504);
 
-	priv->buf = (void *)msg[0];
-	priv->msgid = 0;
-
-	return -ENOSYS;
+	priv->ndev.bar = priv->base;
+	return nvme_init(dev);
 }
 
 static const struct udevice_id apple_nvme_ids[] = {
