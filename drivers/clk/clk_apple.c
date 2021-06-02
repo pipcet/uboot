@@ -7,6 +7,7 @@
 #include <asm/io.h>
 #include <clk-uclass.h>
 #include <dm.h>
+#include <linux/delay.h>
 
 #define CLK_ENABLE	(0xf << 0)
 #define CLK_LOCKED	(0xf << 4)
@@ -20,12 +21,14 @@ struct apple_clk_priv {
 static int apple_clk_enable(struct clk *clk)
 {
 	struct apple_clk_priv *priv = dev_get_priv(clk->dev);
+	int timeout = 1000;
 
 	clk_enable_bulk(&priv->parents);
 
 	writel(readl(priv->base) | CLK_ENABLE, priv->base);
-	while ((readl(priv->base) & CLK_LOCKED) != CLK_LOCKED)
-		;
+	while ((readl(priv->base) & CLK_LOCKED) != CLK_LOCKED &&
+	       timeout--)
+		udelay(1000);
 
 	writel(readl(priv->base) | CLK_RUN, priv->base);
 	return 0;
