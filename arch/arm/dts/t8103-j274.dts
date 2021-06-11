@@ -19,6 +19,8 @@
 		serial0 = &serial0;
 		ethernet0 = &eth0;
 		wifi0 = &wifi0;
+		pci0 = &pci0;
+		pci2 = &pci2;
 	};
 
 	chosen {
