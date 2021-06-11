@@ -447,6 +447,8 @@
 			      <0x5 0x02f80000 0x0 0x4000>;
 			#iommu-cells = <1>;
 			clocks = <&atc1_usb>;
+			interrupt-parent = <&aic>;
+			interrupts = <AIC_IRQ 861 IRQ_TYPE_LEVEL_HIGH>;
 			sid-mask = <11>;
 			sid-remap = <0 1>;
 		};
