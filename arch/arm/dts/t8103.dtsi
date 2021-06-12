@@ -385,7 +385,7 @@
 
 			device_type = "pci";
 
-			pci@0,0 {
+			pci0: pci@0,0 {
 				device_type = "pci";
 				reg = <0x0 0x0 0x0 0x0 0x0>;
 				pwren-gpios = <&smc 13 0>;
@@ -397,7 +397,7 @@
 				ranges;
 			};
 
-			pci@1,0 {
+			pci1: pci@1,0 {
 				device_type = "pci";
 				reg = <0x800 0x0 0x0 0x0 0x0>;
 				reset-gpios = <&pinctrl 153 0>;
@@ -408,7 +408,7 @@
 				ranges;
 			};
 
-			pci@2,0 {
+			pci2: pci@2,0 {
 				device_type = "pci";
 				reg = <0x1000 0x0 0x0 0x0 0x0>;
 				reset-gpios = <&pinctrl 33 0>;
