@@ -130,7 +130,7 @@ typedef struct apple_wdt {
 	u32	sys_ctl;
 } apple_wdt_t;
 
-void reset_cpu(ulong ignored)
+void reset_cpu(void)
 {
 	apple_wdt_t *wdt = (apple_wdt_t *)APPLE_WDT_BASE;
 
