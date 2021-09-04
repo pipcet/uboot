@@ -827,7 +827,7 @@ static int nvme_bind(struct udevice *udev)
 	return device_set_name(udev, name);
 }
 
-static int nvme_probe(struct udevice *udev)
+int nvme_init(struct udevice *udev)
 {
 	int ret;
 	struct nvme_dev *ndev = dev_get_priv(udev);
@@ -920,6 +920,11 @@ free_queue:
 	free((void *)ndev->queues);
 free_nvme:
 	return ret;
+}
+
+static int nvme_probe(struct udevice *udev)
+{
+	return nvme_init(udev);
 }
 
 U_BOOT_DRIVER(nvme) = {
