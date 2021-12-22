@@ -158,5 +158,5 @@ ulong board_get_usable_ram_top(ulong total_size)
 	 * Top part of RAM is used by firmware for things like the
 	 * framebuffer.  This gives us plenty of room to play with.
 	 */
-	return 0x980000000;
+	return 0x840000000;
 }
