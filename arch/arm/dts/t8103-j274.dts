@@ -28,17 +28,20 @@
 
 		stdout-path = "serial0";
 
-		framebuffer0: framebuffer@0 {
-			compatible = "apple,simple-framebuffer", "simple-framebuffer";
-			reg = <0 0 0 0>; /* To be filled by loader */
-			/* Format properties will be added by loader */
-			status = "disabled";
-		};
+	framebuffer: framebuffer@0 {
+		compatible = "apple,simple-framebuffer", "simple-framebuffer";
+		reg = <0x09 0xdd98c000 0x00 0x3e80000>;
+		format = "a8r8g8b8";
+		height = <2160>;
+		stride = <15360>;
+		width = <3840>;
+		status = "okay";
+	};
 	};
 
 	memory@800000000 {
 		device_type = "memory";
-		reg = <0x8 0 0x2 0>; /* To be filled by loader */
+		reg = <0x8 0 0 0x40000000>; /* To be filled by loader */
 	};
 };
 
