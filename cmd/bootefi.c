@@ -421,9 +421,10 @@ static int do_bootefi_image(const char *image_opt)
 
 		if (image_buf != image_addr) {
 			log_err("No UEFI binary known at %s\n", image_opt);
-			return CMD_RET_FAILURE;
+			size = 0x1000000; /* dummy size */
+		} else {
+			size = image_size;
 		}
-		size = image_size;
 	}
 	ret = efi_run_image(image_buf, size);
 
