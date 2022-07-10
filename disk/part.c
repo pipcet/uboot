@@ -455,7 +455,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
 	int part;
 	struct disk_partition tmpinfo;
 
-#ifdef CONFIG_SANDBOX
+#if IS_ENABLED(CONFIG_SANDBOX) || IS_ENABLED(CONFIG_SEMIHOSTING)
 	/*
 	 * Special-case a pseudo block device "hostfs", to allow access to the
 	 * host's own filesystem.
@@ -467,7 +467,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
 		info->blksz = 0;
 		info->bootable = 0;
 		strcpy((char *)info->type, BOOT_PART_TYPE);
-		strcpy((char *)info->name, "Sandbox host");
+		strcpy((char *)info->name, "Host filesystem");
 #if CONFIG_IS_ENABLED(PARTITION_UUIDS)
 		info->uuid[0] = 0;
 #endif
@@ -527,6 +527,8 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
 	/* Look up the device */
 	dev = blk_get_device_by_str(ifname, dev_str, dev_desc);
 	if (dev < 0) {
+		printf("** Bad device specification %s %s **\n",
+		       ifname, dev_str);
 		ret = dev;
 		goto cleanup;
 	}
@@ -713,7 +715,7 @@ int part_get_info_by_name(struct blk_desc *dev_desc, const char *name,
  * @param[in] dev_part_str Input string argument, like "0.1#misc"
  * @param[out] dev_desc Place to store the device description pointer
  * @param[out] part_info Place to store the partition information
- * @return 0 on success, or a negative on error
+ * Return: 0 on success, or a negative on error
  */
 static int part_get_info_by_dev_and_name(const char *dev_iface,
 					 const char *dev_part_str,
