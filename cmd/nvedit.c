@@ -1413,7 +1413,7 @@ U_BOOT_CMD_COMPLETE(
 	"      \"-v\": verbose message\n"
 	"    - delete UEFI variable 'name' if 'value' not specified\n"
 #endif
-	"setenv [-f] name value ...\n"
+	"[-f] name value ...\n"
 	"    - [forcibly] set environment variable 'name' to 'value ...'\n"
 	"setenv [-f] name\n"
 	"    - [forcibly] delete environment variable 'name'",
