@@ -280,7 +280,7 @@ static int console_getc(int file)
 {
 	unsigned char ret;
 
-	/* This is never called with testcdev == NULL */
+	/* This is never called with tstcdev == NULL */
 	ret = tstcdev->getc(tstcdev);
 	tstcdev = NULL;
 	return ret;
