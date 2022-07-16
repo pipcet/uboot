@@ -298,6 +298,9 @@ static int console_tstc(int file)
 	struct stdio_dev *dev;
 	int prev;
 
+	if (tstcdev)
+		return 1;
+
 	prev = disable_ctrlc(1);
 	for_each_console_dev(i, file, dev) {
 		if (dev->tstc != NULL) {
