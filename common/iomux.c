@@ -104,8 +104,8 @@ int iomux_doenv(const int console, const char *arg)
 		/*
 		 * Prevent multiple entries for a device.
 		 */
-		 repeat = iomux_match_device(cons_set, cs_idx, dev);
-		 if (repeat >= 0)
+		repeat = iomux_match_device(cons_set, cs_idx, dev);
+		if (repeat >= 0)
 			continue;
 		/*
 		 * Try assigning the specified device.
