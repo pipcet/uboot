@@ -469,6 +469,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	const char *stdoutname;
 	int node, ret;
 
+#if 0
 	/*
 	 * Modify the "stdout-path" property under "/chosen" to point
 	 * at "/chosen/framebuffer if a keyboard is available and
@@ -494,6 +495,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	if (node < 0 || !fdtdec_get_is_enabled(blob, node))
 		return 0;
 
+#endif
 	node = fdt_path_offset(blob, "/chosen");
 	if (node < 0)
 		return 0;

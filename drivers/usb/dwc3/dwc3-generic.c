@@ -141,15 +141,13 @@ static int dwc3_generic_of_to_plat(struct udevice *dev)
 #if CONFIG_IS_ENABLED(DM_USB_GADGET)
 int dm_usb_gadget_handle_interrupts(struct udevice *dev)
 {
-	struct dwc3_generic_priv *priv = dev_get_priv(dev);
-	struct dwc3 *dwc3 = &priv->dwc3;
 
-	dwc3_gadget_uboot_handle_interrupt(dwc3);
+	dwc3_uboot_handle_interrupt((int) 0);
 
 	return 0;
 }
 
-static int dwc3_generic_peripheral_probe(struct udevice *dev)
+int dwc3_generic_peripheral_probe(struct udevice *dev)
 {
 	struct dwc3_generic_priv *priv = dev_get_priv(dev);
 

@@ -323,8 +323,8 @@ int stdio_add_devices(void)
 		 */
 		ret = uclass_get(UCLASS_KEYBOARD, &uc);
 		if (ret)
-			return ret;
-
+			;
+		else
 		/*
 		 * Don't report errors to the caller - assume that they are
 		 * non-fatal

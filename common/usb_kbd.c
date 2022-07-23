@@ -104,6 +104,8 @@ struct usb_kbd_pdata {
 	int		intpktsize;
 	int		intinterval;
 	unsigned long	last_report;
+	/* The period of time between two calls of usb_kbd_testc(). */
+	unsigned long	testc_tms;
 	struct int_queue *intq;
 
 	uint32_t	repeat_delay;
@@ -119,9 +121,6 @@ struct usb_kbd_pdata {
 };
 
 extern int __maybe_unused net_busy_flag;
-
-/* The period of time between two calls of usb_kbd_testc(). */
-static unsigned long kbd_testc_tms;
 
 /* Puts character in the queue and sets up the in and out pointer. */
 static void usb_kbd_put_queue(struct usb_kbd_pdata *data, u8 c)
@@ -426,9 +425,9 @@ static int usb_kbd_testc(struct stdio_dev *sdev)
 	usb_kbd_dev = (struct usb_device *)dev->priv;
 	data = usb_kbd_dev->privptr;
 
-	if (get_timer(kbd_testc_tms) >= poll_delay) {
+	if (get_timer(data->testc_tms) >= poll_delay) {
 		usb_kbd_poll_for_event(usb_kbd_dev);
-		kbd_testc_tms = get_timer(0);
+		data->testc_tms = get_timer(0);
 	}
 
 	return !(data->usb_in_pointer == data->usb_out_pointer);
@@ -562,6 +561,7 @@ static int probe_usb_keyboard(struct usb_device *dev)
 	char *stdinname;
 	struct stdio_dev usb_kbd_dev;
 	int error;
+	static int count = 0;
 
 	/* Try probing the keyboard */
 	if (usb_kbd_probe_dev(dev, 0) != 1)
@@ -570,7 +570,10 @@ static int probe_usb_keyboard(struct usb_device *dev)
 	/* Register the keyboard */
 	debug("USB KBD: register.\n");
 	memset(&usb_kbd_dev, 0, sizeof(struct stdio_dev));
-	strcpy(usb_kbd_dev.name, DEVNAME);
+	sprintf(usb_kbd_dev.name, "%s", DEVNAME);
+	if (count)
+		sprintf(usb_kbd_dev.name, "%s%d", DEVNAME, count);
+	count++;
 	usb_kbd_dev.flags =  DEV_FLAGS_INPUT;
 	usb_kbd_dev.getc = usb_kbd_getc;
 	usb_kbd_dev.tstc = usb_kbd_testc;

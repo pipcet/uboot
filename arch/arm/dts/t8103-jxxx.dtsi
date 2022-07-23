@@ -23,13 +23,16 @@
 		#size-cells = <2>;
 		ranges;
 
-		stdout-path = "serial0";
+		stdout-path = "/framebuffer";
 
 		framebuffer0: framebuffer@0 {
 			compatible = "apple,simple-framebuffer", "simple-framebuffer";
-			reg = <0 0 0 0>; /* To be filled by loader */
-			/* Format properties will be added by loader */
-			status = "disabled";
+		reg = <0x9 0xdd8ec000 0 0x1fa4000>; /* To be filled by loader */
+		width = <3840>;
+		height = <2160>;
+		stride = <15360>;
+		status = "okay";
+		format = "a8r8g8b8";
 		};
 	};
 
@@ -37,14 +40,6 @@
 		device_type = "memory";
 		reg = <0x8 0 0x2 0>; /* To be filled by loader */
 	};
-};
-
-&serial0 {
-	status = "okay";
-};
-
-&serial2 {
-	status = "okay";
 };
 
 &i2c0 {
@@ -58,7 +53,7 @@
 		typec0: connector {
 			compatible = "usb-c-connector";
 			power-role = "dual";
-			data-role = "dual";
+			data-role = "peripheral";
 
 			ports {
 				#address-cells = <1>;
@@ -83,7 +78,7 @@
 		typec1: connector {
 			compatible = "usb-c-connector";
 			power-role = "dual";
-			data-role = "dual";
+			data-role = "peripheral";
 
 			ports {
 				#address-cells = <1>;

@@ -453,9 +453,11 @@
 			interrupt-parent = <&aic>;
 			interrupts = <AIC_IRQ 777 IRQ_TYPE_LEVEL_HIGH>;
 			usb-role-switch;
-			role-switch-default-mode = "host";
+			role-switch-default-mode = "peripheral";
 			iommus = <&dwc3_0_dart_0 0>, <&dwc3_0_dart_1 1>;
-			power-domains = <&ps_atc0_usb>;
+			gadget {
+			        data-role = "peripheral";
+			};
 		};
 
 		dwc3_0_dart_0: iommu@382f00000 {
@@ -464,7 +466,6 @@
 			interrupt-parent = <&aic>;
 			interrupts = <AIC_IRQ 781 IRQ_TYPE_LEVEL_HIGH>;
 			#iommu-cells = <1>;
-			power-domains = <&ps_atc0_usb>;
 		};
 
 		dwc3_0_dart_1: iommu@382f80000 {
@@ -473,7 +474,6 @@
 			interrupt-parent = <&aic>;
 			interrupts = <AIC_IRQ 781 IRQ_TYPE_LEVEL_HIGH>;
 			#iommu-cells = <1>;
-			power-domains = <&ps_atc0_usb>;
 		};
 
 		dwc3_1: usb@502280000 {
@@ -482,9 +482,8 @@
 			interrupt-parent = <&aic>;
 			interrupts = <AIC_IRQ 857 IRQ_TYPE_LEVEL_HIGH>;
 			usb-role-switch;
-			role-switch-default-mode = "host";
+			role-switch-default-mode = "peripheral";
 			iommus = <&dwc3_1_dart_0 0>, <&dwc3_1_dart_1 1>;
-			power-domains = <&ps_atc1_usb>;
 		};
 
 		dwc3_1_dart_0: iommu@502f00000 {
