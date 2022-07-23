@@ -524,12 +524,15 @@ static int dwc3_core_init(struct dwc3 *dwc)
 
 	reg = dwc3_readl(dwc->regs, DWC3_GSNPSID);
 	/* This should read as U3 followed by revision number */
-	if ((reg & DWC3_GSNPSID_MASK) != 0x55330000) {
-		dev_err(dwc->dev, "this is not a DesignWare USB3 DRD Core\n");
-		ret = -ENODEV;
-		goto err0;
+	if ((reg & DWC3_GSNPSID_MASK) == 0x33310000) {
+		/* Artificially make dwc->revision greater than the
+		 * 0x5533XXXX ones. */
+		dwc->revision = reg | 0x80000000;
+	} else if ((reg & DWC3_GSNPSID_MASK) != 0x55330000) {
+		dev_err(dwc->dev, "this is not a DesignWare USB3 DRD Core (%p = %08x)\n", dwc->regs, reg);
+	} else {
+		dwc->revision = reg;
 	}
-	dwc->revision = reg;
 
 	/* Handle USB2.0-only core configuration */
 	if (DWC3_GHWPARAMS3_SSPHY_IFC(dwc->hwparams.hwparams3) ==
@@ -551,6 +554,17 @@ static int dwc3_core_init(struct dwc3 *dwc)
 		dev_err(dwc->dev, "Reset Timed Out\n");
 		ret = -ETIMEDOUT;
 		goto err0;
+	}
+
+	reg = dwc3_readl(dwc->regs, DWC3_GSNPSID);
+	if ((reg & DWC3_GSNPSID_MASK) == 0x33310000) {
+		/* Artificially make dwc->revision greater than the
+		 * 0x5533XXXX ones. */
+		dwc->revision = reg | 0x80000000;
+	} else if ((reg & DWC3_GSNPSID_MASK) != 0x55330000) {
+		dev_err(dwc->dev, "this is not a DesignWare USB3 DRD Core (%p = %08x)\n", dwc->regs, reg);
+	} else {
+		dwc->revision = reg;
 	}
 
 	dwc3_phy_setup(dwc);
