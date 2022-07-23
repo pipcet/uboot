@@ -4,6 +4,10 @@
 	u-boot,dm-pre-reloc;
 };
 
+&framebuffer0 {
+	u-boot,dm-pre-reloc;
+};
+
 &pmgr {
 	u-boot,dm-pre-reloc;
 };
