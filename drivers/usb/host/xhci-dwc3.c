@@ -16,6 +16,10 @@
 #include <usb.h>
 #include <dwc3-uboot.h>
 #include <linux/delay.h>
+#include <linux/usb/gadget.h>
+#define dwc3 dwc32
+#include "../dwc3/core.h"
+#undef dwc3
 
 #include <usb/xhci.h>
 #include <asm/io.h>
@@ -185,8 +189,19 @@ static int xhci_dwc3_probe(struct udevice *dev)
 
 	dwc3_reg = (struct dwc3 *)((char *)(hccr) + DWC3_REG_OFFSET);
 
-	dwc3_core_init(dwc3_reg);
+	struct dwc3_device *dwc3_dev = kzalloc(sizeof *dwc3_dev, GFP_KERNEL);
+	static int index = 0;
+	dwc3_dev->index = index++;
+	dwc3_dev->base = (void *)dev_remap_addr(dev);
+	dwc3_dev->dr_mode = USB_DR_MODE_PERIPHERAL;
+	if (dwc3_dev->index == 0) {
+		dwc3_uboot_init(dwc3_dev, dev);
+		//extern int usb_ether_init(struct udevice *);
+		//usb_ether_init((struct udevice *)dev);
+		return -ENODEV;
+	}
 
+	dwc3_core_init(dwc3_reg);
 	/* Set dwc3 usb2 phy config */
 	reg = readl(&dwc3_reg->g_usb2phycfg[0]);
 
