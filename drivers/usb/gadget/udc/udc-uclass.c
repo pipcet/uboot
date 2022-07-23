@@ -28,7 +28,7 @@ int usb_gadget_initialize(int index)
 		ret = uclass_get_device(UCLASS_USB_GADGET_GENERIC, index, &dev);
 		if (!dev || ret) {
 			pr_err("No USB device found\n");
-			return -ENODEV;
+			return 0;
 		}
 	}
 	dev_array[index] = dev;
